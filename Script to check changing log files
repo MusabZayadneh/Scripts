@@ -1,0 +1,57 @@
+#!/bin/bash
+
+mkdir test_log_files
+
+tail -15 /dev/efs/var/liwwa/log/apache_error.log > test_log_files/a_err2.log
+tail -15 /dev/efs/var/liwwa/log/error.log > test_log_files/err2.log
+tail -15 /dev/efs/var/liwwa/log/admin/apache_error.log > test_log_files/admin_a_err2.log
+tail -15 /dev/efs/var/liwwa/log/admin/error.log > test_log_files/admin_err2.log
+
+sleep 10
+
+A_ERR=`tail -15 /dev/efs/var/liwwa/log/apache_error.log`
+ERR=`tail -15 /dev/efs/var/liwwa/log/error.log`
+ADMIN_A_ERR=`tail -15 /dev/efs/var/liwwa/log/admin/apache_error.log`
+ADMIN_ERR=`tail -15 /dev/efs/var/liwwa/log/admin/error.log`
+
+echo $A_ERR > test_log_files/a_err.log
+echo $ERR > test_log_files/err.log
+echo $ADMIN_A_ERR > test_log_files/admin_a_err.log
+echo $ADMIN_ERR > test_log_files/admin_err.log
+
+T1=`diff test_log_files/a_err.log test_log_files/a_err2.log`
+if [ $? -eq 1 ]
+then 
+e_A_ERR=`echo $A_ERR | sed 's/"/ /g' | sed "s/'/ /g"`
+
+curl -X POST --data-urlencode "payload={\"channel\": \"#test\", \"username\": \"*prod-error*\", \"text\": \">*/dev/efs/var/liwwa/log/apache_error.log*\n\n>$e_A_ERR\", \"icon_emoji\": \":space_invader:\"}" <web hook>
+fi
+
+T2=`diff test_log_files/err.log test_log_files/err2.log`
+if [ $? -eq 1 ]
+then 
+e_ERR=`echo $ERR | sed 's/"/ /g' | sed "s/'/ /g"`
+
+curl -X POST --data-urlencode "payload={\"channel\": \"#test\", \"username\": \"*prod-error*\", \"text\": \">*/dev/efs/var/liwwa/log/error.log*\n\n>$e_ERR\", \"icon_emoji\": \":space_invader:\"}" <web hook>
+fi
+
+
+T3=`diff test_log_files/admin_a_err.log test_log_files/admin_a_err2.log`
+if [ $? -eq 1 ]
+then 
+e_ADMIN_A_ERR=`echo $ADMIN_A_ERR | sed 's/"/ /g' | sed "s/'/ /g"`
+
+curl -X POST --data-urlencode "payload={\"channel\": \"#test\", \"username\": \"*prod-error*\", \"text\": \">*/dev/efs/var/liwwa/log/admin/apache_error.log*\n\n>$e_ADMIN_A_ERR\", \"icon_emoji\": \":space_invader:\"}" <web hook>
+fi
+
+
+T4=`diff test_log_files/admin_err.log test_log_files/admin_err2.log`
+if [ $? -eq 1 ]
+then 
+e_ADMIN_ERR=`echo $ADMIN_ERR | sed 's/"/ /g' | sed "s/'/ /g"`
+
+curl -X POST --data-urlencode "payload={\"channel\": \"#test\", \"username\": \"*prod-error*\", \"text\": \">*/dev/efs/var/liwwa/log/admin/error.log*\n\n>$e_ADMIN_ERR\", \"icon_emoji\": \":space_invader:\"}" <web hook>
+fi
+
+
+rm -rf test_log_files
