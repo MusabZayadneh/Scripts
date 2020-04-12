@@ -1,0 +1,32 @@
+#!/bin/bash
+
+old_account_AWScli()
+{
+echo -e "[default]\naws_access_key_id = PUT_HERE\naws_secret_access_key = PUT_HERE" > /root/.aws/credentials
+}
+
+new_account_AWScli()
+{
+echo -e "[default]\naws_access_key_id = PUT_HERE\naws_secret_access_key = PUT_HERE" > /root/.aws/credentials
+}
+
+
+old_account_AWScli
+echo "starting on  Legacy account S3 buckets"
+echo "--------------------------------"
+aws s3 ls > legacy_account_S3.txt
+echo ""
+
+new_account_AWScli
+echo "Starting on New account S3 buckets "
+echo "-------------------"
+S3=`cat legacy_account_S3.txt | awk '{print $3}'`
+for X in $S3
+do
+echo "Copying $X" 
+echo "Creating $X-new" 
+aws s3api create-bucket --bucket "$X-new" --region us-east-1
+aws s3 sync s3://$X s3://$X-new
+#aws s3api delete-bucket --bucket "$X-new" --region us-east-1
+done
+echo ""
