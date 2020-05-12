@@ -1,0 +1,34 @@
+# you need to add policy for this AWS User check https://github.com/MusabZayadneh/AWS-Policies/blob/master/allow%20IAM%20user%20to%20edit%20Security%20Group 
+#!/bin/bash
+echo -e "[default]\naws_access_key_id = <ACCESS_ID>\naws_secret_access_key = <ACCESS_ID_SECRET>" > /<USER_DIR>/.aws/credentials
+set -x
+#
+#this while to get all the inbound rules from AWS Security Group then delete them
+#
+while [ true  ]
+do
+ip=`aws ec2 describe-security-groups --group-ids <SG_ID> --region <REGION> --query "SecurityGroups[*].IpPermissions[*].IpRanges[0].CidrIp" --output text`
+if [ -z $ip  ]
+then
+break
+fi
+echo "Removing Rule"
+aws ec2 revoke-security-group-ingress --group-id <SG_ID> --region <REGION> --protocol tcp --port 443 --cidr $ip
+done
+#
+#this while to get the IPs from github then add rule for them on the AWS Security Group
+#
+i=0
+while [ true  ]
+do
+github_ip=`curl https://api.github.com/meta | jq .hooks[$i] -r`
+if [ $github_ip == "null" ]
+then
+break
+fi
+aws ec2 authorize-security-group-ingress --group-id <SG_ID> --region <REGION> --ip-permissions IpProtocol=tcp,FromPort=443,ToPort=443,IpRanges="[{CidrIp=$github_ip,Description='Github Hooks Source / as per https://api.github.com/meta'}]"
+i=$(( i+1 ))
+done
+echo "Removing the aws credentials"
+rm -rf /<USER_DIR>/.aws/credentials
+
